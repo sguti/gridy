@@ -12,11 +12,15 @@ export function debounce(func: Function, wait: number): any {
   let timeout;
   return function() {
     let _this = this,
-      _arguments = arguments;    
+      _arguments = arguments;
     timeout && clearTimeout(timeout);
     timeout = setTimeout(() => {
       timeout = null;
       func.apply(_this, _arguments);
     }, wait);
   };
+}
+///This is not the proper way to do a deep copy
+export function deepCopy<T>(object: T) {
+  return JSON.parse(JSON.stringify(object)) as T;
 }

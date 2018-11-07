@@ -1,3 +1,5 @@
+import { deepCopy } from "./utils";
+
 export abstract class GridyBlock {
   x: number;
   y: number;
@@ -9,11 +11,14 @@ export abstract class GridyBlock {
   left?: GridyBlock;
   tileId?: string;
   isEmpty: boolean;
+  isStartOfATile?: boolean;
 }
 const _blocks = new Array<GridyBlock>();
 let _containerHeight = 0;
 let _containerWidth = 0;
 let _blockSize = 0;
+let _columnCount = 0;
+let _rowCount = 0;
 export function createLogicalBlocks(
   width: number,
   height: number,
@@ -29,8 +34,8 @@ export function createLogicalBlocks(
     );
     throw "Unable to create blocks";
   }
-  const rowCount = height / blockSize;
-  const colCount = width / blockSize;
+  const rowCount = (_rowCount = height / blockSize);
+  const colCount = (_columnCount = width / blockSize);
   for (let rowIndex = 1; rowIndex <= rowCount; rowIndex++) {
     for (let colIndex = 1; colIndex <= colCount; colIndex++) {
       const block: GridyBlock = {
@@ -75,13 +80,13 @@ function usable(length: number, blockLength: number): number {
 export function geAllBlocks(): GridyBlock[] {
   return _blocks;
 }
-export function getEmptyBlockRange(
+export function getAvailableEmptyBlockRange(
   height: number,
   width: number
 ): GridyBlock[] {
   for (const _block of _blocks) {
     if (_block.isEmpty) {
-      const blockRange = _getBlockRange(
+      const blockRange = _getEmptyBlockRange(
         height,
         width,
         _block,
@@ -95,7 +100,7 @@ export function getEmptyBlockRange(
   }
   return new Array<GridyBlock>();
 }
-function _getBlockRange(
+function _getEmptyBlockRange(
   height: number,
   width: number,
   currentBlock: GridyBlock,
@@ -185,10 +190,65 @@ export function moveElement(
     block.isEmpty = false;
     block.tileId = from.tileId;
   });
-  fromBlockRange.forEach(block => {
+  deleteBlockData(fromBlockRange);
+}
+
+export function deleteBlockData(blockRange: GridyBlock[]) {
+  blockRange.forEach(block => {
     block.isEmpty = true;
     block.tileId = "";
+    block.isStartOfATile = false;
   });
 }
+export function moveBlockRange(
+  blockRange: GridyBlock[],
+  to: GridyBlock
+): boolean {
+  const blockRangeCopy = deepCopy(blockRange);
+  deleteBlockData(blockRange);
+  const columns = blockRange
+    .filter(block => block.row === blockRange[0].row)
+    .map(block => block.column);
+  const columnCount = columns.length;
+  const rows = blockRange
+    .filter(block => block.column === blockRange[0].column)
+    .map(block => block.row);
+  const rowCount = rows.length;
+  const maxRowNumberWithBlock = Math.max(
+    ..._blocks
+      .filter(block => ~columns.indexOf(block.column))
+      .map(block => block.row)
+  );
+  if (maxRowNumberWithBlock + rowCount > _rowCount) {
+    console.log("not enough space to move the block");
+    return false;
+  }
+  const oroginalBlockRange = getBlockRange(
+    to,
+    rowCount * _blockSize,
+    columnCount * _blockSize
+  );
+
+  for (let rowNumber = to.row; rowNumber < to.row + rowCount; rowNumber++) {
+    for (
+      let columnNumber = 0;
+      columnNumber < to.column + columnCount;
+      columnNumber++
+    ) {
+      const originalBlock = oroginalBlockRange.find(
+        block => block.row === rowNumber && block.column === columnNumber
+      );
+      const clipBoardBlock = blockRangeCopy.find(
+        block => block.row === rowNumber && block.column === columnNumber
+      );
+      originalBlock.tileId = clipBoardBlock.tileId;
+      originalBlock.isStartOfATile = clipBoardBlock.isStartOfATile;
+      originalBlock.isEmpty = clipBoardBlock.isEmpty;
+    }
+  }
+  return true;
+}
+
+
 export function updateBlock() {}
 export function isEmptyBlock() {}

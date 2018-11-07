@@ -1,4 +1,8 @@
-import { getEmptyBlockRange, getNearestBlock, moveElement } from "./block";
+import {
+  getAvailableEmptyBlockRange,
+  getNearestBlock,
+  moveElement
+} from "./block";
 import { styleValue } from "./utils";
 import { TileAttribute } from "./lib.enums";
 import { GridyEvent } from "./gridy.event";
@@ -9,14 +13,17 @@ export function autoAlignItems(
 ) {
   tiles.forEach(tile => {
     tile.style.position = "absolute";
-    const blockRange = getEmptyBlockRange(
+    const blockRange = getAvailableEmptyBlockRange(
       styleValue(tile.style.height),
       styleValue(tile.style.width)
     );
     if (Array.isArray(blockRange) && blockRange.length) {
       tile.style.left = blockRange[0].x + "px";
       tile.style.top = blockRange[0].y + "px";
-      blockRange.forEach(block => {
+      blockRange.forEach((block, index) => {
+        if (index === 0) {
+          block.isStartOfATile = true;
+        }
         block.isEmpty = false;
         block.tileId = tile.getAttribute(TileAttribute.uniqueId);
       });
