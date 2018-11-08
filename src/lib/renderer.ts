@@ -1,7 +1,8 @@
 import {
   getAvailableEmptyBlockRange,
   getNearestBlock,
-  moveElement
+  moveElement,
+  getCollisionData
 } from "./block";
 import { styleValue } from "./utils";
 import { TileAttribute } from "./lib.enums";
@@ -46,7 +47,12 @@ export function createTemporaryDropLocation(
     (<any>gridyEvent.event).pageY -
     (container.offsetTop +
       +gridyEvent.dragSource.getAttribute(TileAttribute.cursorY));
-  const block = getNearestBlock(offsetX, offsetY);
+  const collision = getCollisionData(
+    offsetX,
+    offsetY,
+    styleValue(gridyEvent.dragSource.style.height),
+    styleValue(gridyEvent.dragSource.style.width)
+  );
   let temporaryDropTarget: HTMLElement = document.querySelector(
     `[${TileAttribute.tempDropTarget}=true]`
   );
@@ -58,10 +64,10 @@ export function createTemporaryDropLocation(
   }
   temporaryDropTarget.style.height = gridyEvent.dragSource.style.height;
   temporaryDropTarget.style.width = gridyEvent.dragSource.style.width;
-  temporaryDropTarget.style.left = block.x + "px";
-  temporaryDropTarget.style.top = block.y + "px";
+  temporaryDropTarget.style.left = collision.block.x + "px";
+  temporaryDropTarget.style.top = collision.block.y + "px";
   temporaryDropTarget.style.border = `2px dashed ${
-    block.isEmpty ? "Green" : "Red"
+    collision.block.isEmpty ? "Green" : "Red"
   }`;
 }
 export function removeTemporaryDropLocation(container: HTMLElement) {

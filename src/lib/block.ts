@@ -1,4 +1,11 @@
-import { deepCopy } from "./utils";
+import { deepCopy, unique } from "./utils";
+
+export enum CollisionPoint {
+  Top,
+  Right,
+  Bottom,
+  Left
+}
 
 export abstract class GridyBlock {
   x: number;
@@ -13,7 +20,26 @@ export abstract class GridyBlock {
   isEmpty: boolean;
   isStartOfATile?: boolean;
 }
+export abstract class BlockRange {
+  blocks: GridyBlock[];
+  rows: Number[];
+  rowCount: Number;
+  columns: Number[];
+  columnCount: Number;
+  startX: Number;
+  endX: Number;
+  startY: Number;
+  endY: Number;
+  isEmpty: Boolean;
+  isComplete: Boolean;
+}
+export abstract class Collision {
+  block: GridyBlock;
+  collisionPoints: CollisionPoint[];
+  collidingTiles: string[];
+}
 const _blocks = new Array<GridyBlock>();
+const _blocksObject = {};
 let _containerHeight = 0;
 let _containerWidth = 0;
 let _blockSize = 0;
@@ -46,9 +72,11 @@ export function createLogicalBlocks(
         isEmpty: true
       };
       _blocks.push(block);
+      _blocksObject[key(block.x, block.y)] = block;
     }
   }
   updateBlockReferences(rowCount, colCount);
+  console.log(_blocksObject);
 }
 function updateBlockReferences(rowCount: number, colCount: number) {
   _blocks.forEach(block => {
@@ -143,18 +171,22 @@ export function getBlockRange(
   currentBlock: GridyBlock,
   height: number,
   width: number
-): GridyBlock[] {
+): BlockRange {
   const blockRange = new Array<GridyBlock>();
-
+  let isEmptyBlock = false;
   let columnRequired = width / _blockSize;
+  const columns = [];
   while (columnRequired > 0) {
     blockRange.push(currentBlock);
+    isEmptyBlock = currentBlock.isEmpty;
+    columns.push(currentBlock.column);
     currentBlock = currentBlock.right;
     --columnRequired;
     if (!currentBlock) {
       columnRequired = 0;
     }
   }
+  const rows = [];
   if (columnRequired === 0) {
     const copy = blockRange.slice();
     for (let index = 0; index < copy.length; index++) {
@@ -162,6 +194,8 @@ export function getBlockRange(
       let rowRequired = height / _blockSize - 1;
       while (rowRequired > 0) {
         blockRange.push(currentBlock);
+        isEmptyBlock = currentBlock.isEmpty;
+        rows.push(currentBlock.row);
         currentBlock = currentBlock.bottom;
         --rowRequired;
         if (!currentBlock) {
@@ -170,13 +204,57 @@ export function getBlockRange(
       }
     }
   }
-  return blockRange;
+  return {
+    blocks: blockRange,
+    columns: columns,
+    columnCount: columns.length,
+    rows: rows,
+    rowCount: rows.length,
+    isEmpty: isEmptyBlock,
+    startX: blockRange[0].x,
+    endX: blockRange[0].x + width,
+    startY: blockRange[0].y,
+    endY: blockRange[0].y + width,
+    isComplete: rows.length * columns.length === blockRange.length
+  };
 }
 
 export function getNearestBlock(x: number, y: number): GridyBlock {
   x = Math.floor(x / _blockSize) * _blockSize;
   y = Math.floor(y / _blockSize) * _blockSize;
   return _blocks.find(_block => _block.x === x && _block.y === y);
+}
+export function getCollisionData(
+  x: number,
+  y: number,
+  height: number,
+  width: number
+): Collision {
+  const nearestBlockX = Math.floor(x / _blockSize) * _blockSize;
+  const nearestBlockY = Math.floor(y / _blockSize) * _blockSize;
+  const collision: Collision = {
+    block: _blocksObject[key(nearestBlockX, nearestBlockY)],
+    collisionPoints: [
+      x - nearestBlockX > _blockSize / 2
+        ? CollisionPoint.Right
+        : CollisionPoint.Left,
+      y - nearestBlockY > _blockSize / 2
+        ? CollisionPoint.Bottom
+        : CollisionPoint.Top
+    ],
+    collidingTiles:
+      unique(
+        getBlockRange(
+          _blocksObject[key(nearestBlockX, nearestBlockY)],
+          height,
+          width
+        )
+          .blocks.map(block => block.tileId)
+          .filter(tileId => tileId),
+        item => item
+      ) || []
+  };
+  return collision;
 }
 export function moveElement(
   from: GridyBlock,
@@ -186,11 +264,11 @@ export function moveElement(
 ) {
   const fromBlockRange = getBlockRange(from, height, width);
   const toBlockRange = getBlockRange(to, height, width);
-  toBlockRange.forEach(block => {
+  toBlockRange.blocks.forEach(block => {
     block.isEmpty = false;
     block.tileId = from.tileId;
   });
-  deleteBlockData(fromBlockRange);
+  deleteBlockData(fromBlockRange.blocks);
 }
 
 export function deleteBlockData(blockRange: GridyBlock[]) {
@@ -235,7 +313,7 @@ export function moveBlockRange(
       columnNumber < to.column + columnCount;
       columnNumber++
     ) {
-      const originalBlock = oroginalBlockRange.find(
+      const originalBlock = oroginalBlockRange.blocks.find(
         block => block.row === rowNumber && block.column === columnNumber
       );
       const clipBoardBlock = blockRangeCopy.find(
@@ -248,7 +326,14 @@ export function moveBlockRange(
   }
   return true;
 }
+export function shiftBlockRange(blockRange: BlockRange, collision: Collision) {
+  const blockMoveGraph = [];
+}
 
+function key(x: number, y: number) {
+  return `x${x}y${y}`;
+}
 
-export function updateBlock() {}
-export function isEmptyBlock() {}
+export function isEmptyBlock(block: GridyBlock): boolean {
+  return block.isEmpty;
+}
