@@ -1,8 +1,10 @@
 import { trigger, GridyEventType } from "./gridy.event";
 import { debounce } from "./utils";
 
-export function createDroppable(element: HTMLElement) {
+export function droppable(element: HTMLElement) {
   element.addEventListener("dragover", debounce(dragOverHandler, 50));
+  element.addEventListener("dragenter", dragEnterHandler);
+  element.addEventListener("dragleave", dragLeaveHandler);
   element.addEventListener("drop", dropHandler);
 }
 function dragOverHandler(event) {
@@ -17,4 +19,10 @@ function dragOverHandler(event) {
 function dropHandler() {
   event.preventDefault();
   trigger(GridyEventType.Drop, event);
+}
+function dragEnterHandler() {
+  trigger(GridyEventType.DragEnter, event);
+}
+function dragLeaveHandler() {
+  trigger(GridyEventType.DragLeave, event);
 }

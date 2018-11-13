@@ -52,7 +52,7 @@ export function createTemporaryDropLocation(
     offsetY,
     styleValue(gridyEvent.dragSource.style.height),
     styleValue(gridyEvent.dragSource.style.width)
-  );
+  );  
   let temporaryDropTarget: HTMLElement = document.querySelector(
     `[${TileAttribute.tempDropTarget}=true]`
   );
@@ -64,10 +64,10 @@ export function createTemporaryDropLocation(
   }
   temporaryDropTarget.style.height = gridyEvent.dragSource.style.height;
   temporaryDropTarget.style.width = gridyEvent.dragSource.style.width;
-  temporaryDropTarget.style.left = collision.block.x + "px";
-  temporaryDropTarget.style.top = collision.block.y + "px";
+  temporaryDropTarget.style.left = collision.entryBlock.x + "px";
+  temporaryDropTarget.style.top = collision.entryBlock.y + "px";
   temporaryDropTarget.style.border = `2px dashed ${
-    collision.block.isEmpty ? "Green" : "Red"
+    collision.entryBlock.isEmpty ? "Green" : "Red"
   }`;
 }
 export function removeTemporaryDropLocation(container: HTMLElement) {

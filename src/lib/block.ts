@@ -1,13 +1,14 @@
 import { deepCopy, unique } from "./utils";
 
-export enum CollisionPoint {
+export enum Direction {
   Top,
   Right,
   Bottom,
   Left
 }
 
-export abstract class GridyBlock {
+export interface GridyBlock {
+  id: string;
   x: number;
   y: number;
   row: number;
@@ -20,7 +21,7 @@ export abstract class GridyBlock {
   isEmpty: boolean;
   isStartOfATile?: boolean;
 }
-export abstract class BlockRange {
+export interface BlockRange {
   blocks: GridyBlock[];
   rows: Number[];
   rowCount: Number;
@@ -33,13 +34,16 @@ export abstract class BlockRange {
   isEmpty: Boolean;
   isComplete: Boolean;
 }
-export abstract class Collision {
-  block: GridyBlock;
-  collisionPoints: CollisionPoint[];
+export interface Collision {
+  entryBlock: GridyBlock;
   collidingTiles: string[];
+  horizontalBlocks?: GridyBlock[];
+  verticalBlocks?: GridyBlock[];
 }
 const _blocks = new Array<GridyBlock>();
 const _blocksObject = {};
+let _blocksTemp: Array<GridyBlock>;
+let _blocksObjectTemp: Object;
 let _containerHeight = 0;
 let _containerWidth = 0;
 let _blockSize = 0;
@@ -65,6 +69,7 @@ export function createLogicalBlocks(
   for (let rowIndex = 1; rowIndex <= rowCount; rowIndex++) {
     for (let colIndex = 1; colIndex <= colCount; colIndex++) {
       const block: GridyBlock = {
+        id: `${rowIndex}${colIndex}`,
         row: rowIndex,
         column: colIndex,
         y: (rowIndex - 1) * blockSize,
@@ -232,27 +237,25 @@ export function getCollisionData(
 ): Collision {
   const nearestBlockX = Math.floor(x / _blockSize) * _blockSize;
   const nearestBlockY = Math.floor(y / _blockSize) * _blockSize;
+  const blockRange = getBlockRange(
+    _blocksObject[key(nearestBlockX, nearestBlockY)],
+    height,
+    width
+  );
+  const entryBlock = _blocksObject[key(nearestBlockX, nearestBlockY)];
+  const uniqueTiles =
+    unique(
+      blockRange.blocks.map(block => block.tileId).filter(tileId => tileId),
+      item => item
+    ) || [];
+  const tilesStartBlocks: GridyBlock[] = _blocks.filter(
+    _block => _block.isStartOfATile && ~uniqueTiles.indexOf(_block.tileId)
+  );
   const collision: Collision = {
-    block: _blocksObject[key(nearestBlockX, nearestBlockY)],
-    collisionPoints: [
-      x - nearestBlockX > _blockSize / 2
-        ? CollisionPoint.Right
-        : CollisionPoint.Left,
-      y - nearestBlockY > _blockSize / 2
-        ? CollisionPoint.Bottom
-        : CollisionPoint.Top
-    ],
-    collidingTiles:
-      unique(
-        getBlockRange(
-          _blocksObject[key(nearestBlockX, nearestBlockY)],
-          height,
-          width
-        )
-          .blocks.map(block => block.tileId)
-          .filter(tileId => tileId),
-        item => item
-      ) || []
+    entryBlock: entryBlock,
+    verticalBlocks: tilesStartBlocks,
+    horizontalBlocks: tilesStartBlocks,
+    collidingTiles: uniqueTiles
   };
   return collision;
 }
@@ -327,6 +330,8 @@ export function moveBlockRange(
   return true;
 }
 export function shiftBlockRange(blockRange: BlockRange, collision: Collision) {
+  _blocksTemp = deepCopy(_blocks);
+  _blocksObjectTemp = deepCopy(_blocks);
   const blockMoveGraph = [];
 }
 

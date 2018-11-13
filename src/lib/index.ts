@@ -1,6 +1,6 @@
 import { setTileSize } from "./size";
-import { createDraggable } from "./draggable";
-import { createDroppable } from "./droppable";
+import { draggable } from "./draggable";
+import { droppable } from "./droppable";
 import { setUniqueId } from "./utils";
 import { on, GridyEventType, GridyEvent } from "./gridy.event";
 import { createLogicalBlocks, geAllBlocks } from "./block";
@@ -16,7 +16,7 @@ export enum LayoutType {
   Manual,
   Auto
 }
-export abstract class GridyConfig {
+export interface GridyConfig {
   container: HTMLElement;
   tiles: Array<HTMLElement>;
   containerWidth: number;
@@ -28,11 +28,11 @@ export function gridy(config: GridyConfig) {
   config.tiles.forEach((tile: HTMLElement) => {
     setUniqueId(tile);
     setTileSize(tile, config.blockSize);
-    createDraggable(tile);
-    createDroppable(tile);
+    draggable(tile);
+    droppable(tile);
     tile.style.visibility = "Visible";
   });
-  createDroppable(config.container);
+  droppable(config.container);
   createLogicalBlocks(
     config.containerWidth,
     config.containerHeight,
