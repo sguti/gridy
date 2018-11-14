@@ -8,7 +8,8 @@ import {
   autoAlignItems,
   createTemporaryDropLocation,
   removeTemporaryDropLocation,
-  moveElementToTemporaryDropLocation
+  moveElementToTemporaryDropLocation,
+  createTemporaryDropLocationV2
 } from "./renderer";
 
 export enum LayoutType {
@@ -41,8 +42,7 @@ export function gridy(config: GridyConfig) {
 
   config.autoAlign && autoAlignItems(config.container, config.tiles);
   on(GridyEventType.DragOver, (eventModel: GridyEvent) => {
-    console.log("Drag over");
-    createTemporaryDropLocation(config.container, eventModel);
+    createTemporaryDropLocationV2(config.container, eventModel);
   });
   on(GridyEventType.DragStart, (eventModel: GridyEvent) => {
     // removeTemporaryDropLocation(config.container);

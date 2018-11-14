@@ -7,3 +7,6 @@ export enum TileAttribute {
   cursorY = "cursor-y",
   tempDropTarget = "gridy-temporary-drop-target"
 }
+export enum DropTargetAttribute {
+  isValid = "is-valid"
+}
